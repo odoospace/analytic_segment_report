@@ -5,7 +5,7 @@
             <field name="model">general.ledger.webkit</field>
             <field name="inherit_id" ref="account_financial_report_webkit.account_report_general_ledger_view_webkit"/>
             <field name="arch" type="xml">
-                <xpath expr="//page[@name='filters'" position="after">
+                <xpath expr="//page[@name='filters']" position="after">
                     <page name="analytic_segment" string='Analytic Segment'>
                         <group string="Analytic Segment">
                             <field name="analytic_segment_ids" widget="one2many_list">
