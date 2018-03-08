@@ -1,5 +1,6 @@
 <openerp>
     <data>
+        <!-- General Ledger - Libro mayor -->
         <record id="account_report_general_ledger_view_webkit_as" model="ir.ui.view">
             <field name="name">general.ledger.analytic.segment</field>
             <field name="model">general.ledger.webkit</field>
@@ -8,7 +9,7 @@
                 <xpath expr="//page[@name='filters']" position="after">
                     <page name="analytic_segment" string='Analytic Segment'>
                         <group string="Analytic Segment">
-                            <field name="analytic_segment_ids" widget="one2many_list">
+                            <field name="analytic_segment_ids" widget="one2many_list" nolabel="1">
                                 <tree string="Analytic Segments" editable="bottom">
                                     <field name="segment_id"/>
                                     <field name="segment"/>
@@ -21,6 +22,27 @@
             </field>
         </record>
 
+        <!-- Trial balance - Sumas y Saldos -->
+        <record id="account_trial_balance_view_webkit_as" model="ir.ui.view">
+            <field name="name">Trial Balance Analytic Segment</field>
+            <field name="model">trial.balance.webkit</field>
+            <field name="inherit_id" ref="account_financial_report_webkit.account_trial_balance_view_webkit"/>
+            <field name="arch" type="xml">
+                <xpath expr="//page[@name='accounts']" position="after">
+                    <page name="analytic_segment" string='Analytic Segment'>
+                        <group string="Analytic Segment">
+                            <field name="analytic_segment_ids" widget="one2many_list" nolabel="1">
+                                <tree string="Analytic Segments" editable="bottom">
+                                    <field name="segment_id"/>
+                                    <field name="segment"/>
+                                    <field name="with_children"/>
+                                </tree>
+                            </field>
+                        </group>
+                    </page>
+                </xpath>
+            </field>
+        </record>
         
     </data>
 </openerp>
