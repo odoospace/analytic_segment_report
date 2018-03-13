@@ -1,0 +1,24 @@
+<openerp>
+    <data>
+
+        <record id="view_account_balance_reporting_form_as" model="ir.ui.view">
+            <field name="name">account.balance.reporting.form.as</field>
+            <field name="model">account.balance.reporting</field>
+            <field name="inherit_id" ref="account_balance_reporting.view_account_balance_reporting_form"/>
+            <field name="arch" type="xml">
+                <xpath expr="//notebook/page[1]//group[1]" position="after">
+                    <group string="Analytic Segment">
+                        <field name="analytic_segment_ids" widget="one2many_list" nolabel="1">
+                            <tree string="Analytic Segments" editable="bottom">
+                                <field name="segment_id"/>
+                                <field name="segment"/>
+                                <field name="with_children"/>
+                            </tree>
+                        </field>
+                    </group>
+                </xpath>
+            </field>
+        </record>
+
+    </data>
+</openerp>
