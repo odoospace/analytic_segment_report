@@ -39,7 +39,7 @@ class AccountBalanceReporting(models.Model):
                 'done': [('readonly', True)]})
 
 
-class AccountBalanceReportingLine(models.Model):
+'''class AccountBalanceReportingLine(models.Model):
 
     _inherit = "account.balance.reporting.line"
 
@@ -98,6 +98,141 @@ class AccountBalanceReportingLine(models.Model):
                 })
                 # HACK: For assuring the values got updated on call loop
                 line.refresh()
+        return True'''
+from openerp.osv import orm, fields
+import re
+class AccountBalanceReportingLine(orm.Model):
+
+    _inherit = "account.balance.reporting.line"
+
+    def refresh_values(self, cr, uid, ids, context=None):
+        """Recalculates the values of this report line using the
+        linked line report values formulas:
+
+        Depending on this formula the final value is calculated as follows:
+        - Empy report value: sum of (this concept) children values.
+        - Number with decimal point ("10.2"): that value (constant).
+        - Account numbers separated by commas ("430,431,(437)"): Sum of the
+            account balances.
+            (The sign of the balance depends on the balance mode)
+        - Concept codes separated by "+" ("11000+12000"): Sum of those
+            concepts values.
+        """
+        if context is None:
+            context = {}
+        for line in self.browse(cr, uid, ids, context=context):
+            tmpl_line = line.template_line_id
+            balance_mode = int(tmpl_line.template_id.balance_mode)
+            current_value = 0.0
+            previous_value = 0.0
+            report = line.report_id
+            segment_ids = []
+            for s in report.analytic_segment_ids
+                segment_ids.append(s.segment_id.id)
+                if s.with_children:
+                    segment_ids += s.segment_id.segment_tmpl_id.get_childs_ids()
+            print segment_ids
+            # We use the same code to calculate both fiscal year values,
+            # just iterating over them.
+            for fyear in ('current', 'previous'):
+                value = 0
+                if fyear == 'current':
+                    tmpl_value = tmpl_line.current_value
+                elif fyear == 'previous':
+                    tmpl_value = (tmpl_line.previous_value or
+                                  tmpl_line.current_value)
+                # Remove characters after a ";" (we use ; for comments)
+                if tmpl_value:
+                    tmpl_value = tmpl_value.split(';')[0]
+                if (fyear == 'current' and not report.current_fiscalyear_id) \
+                        or (fyear == 'previous' and
+                            not report.previous_fiscalyear_id):
+                    value = 0
+                else:
+                    if not tmpl_value:
+                        # Empy template value => sum of the children values
+                        for child in line.child_ids:
+                            if child.calc_date != child.report_id.calc_date:
+                                # Tell the child to refresh its values
+                                child.refresh_values()
+                                # Reload the child data
+                                child = self.browse(cr, uid, child.id,
+                                                    context=context)
+                            if fyear == 'current':
+                                value += child.current_value
+                            elif fyear == 'previous':
+                                value += child.previous_value
+                    elif re.match(r'^\-?[0-9]*\.[0-9]*$', tmpl_value):
+                        # Number with decimal points => that number value
+                        # (constant).
+                        value = float(tmpl_value)
+                    elif re.match(r'^[0-9a-zA-Z,\(\)\*_\ ]*$', tmpl_value):
+                        # Account numbers separated by commas => sum of the
+                        # account balances. We will use the context to filter
+                        # the accounts by fiscalyear and periods.
+                        ctx = context.copy()
+                        if fyear == 'current':
+                            ctx.update({
+                                'fiscalyear': report.current_fiscalyear_id.id,
+                                'periods': [p.id for p in
+                                            report.current_period_ids],
+                                # 'segment_ids': [s.segment_id.id for s in report.analytic_segment_ids],
+                                'segment_ids': segment_ids,
+                            })
+                        elif fyear == 'previous':
+                            ctx.update({
+                                'fiscalyear': report.previous_fiscalyear_id.id,
+                                'periods': [p.id for p in
+                                            report.previous_period_ids],
+                                # 'segment_ids': [s.segment_id.id for s in report.analytic_segment_ids],
+                                'segment_ids': segment_ids,
+                            })
+                        value = self._get_account_balance(
+                            cr, uid, [line.id], tmpl_value,
+                            balance_mode=balance_mode, context=ctx)
+                    elif re.match(r'^[\+\-0-9a-zA-Z_\*\ ]*$', tmpl_value):
+                        # Account concept codes separated by "+" => sum of the
+                        # concepts (template lines) values.
+                        for line_code in re.findall(r'(-?\(?[0-9a-zA-Z_]*\)?)',
+                                                    tmpl_value):
+                            sign = 1
+                            if (line_code.startswith('-') or
+                                    (line_code.startswith('(') and
+                                     balance_mode in (2, 4))):
+                                sign = -1
+                            line_code = line_code.strip('-()*')
+                            # findall might return empty strings
+                            if line_code:
+                                # Search for the line (perfect match)
+                                line_ids = self.search(cr, uid, [
+                                    ('report_id', '=', report.id),
+                                    ('code', '=', line_code),
+                                ], context=context)
+                                for child in self.browse(cr, uid, line_ids,
+                                                         context=context):
+                                    if (child.calc_date !=
+                                            child.report_id.calc_date):
+                                        child.refresh_values()
+                                        # Reload the child data
+                                        child = self.browse(cr, uid, child.id,
+                                                            context=context)
+                                    if fyear == 'current':
+                                        value += child.current_value * sign
+                                    elif fyear == 'previous':
+                                        value += child.previous_value * sign
+                # Negate the value if needed
+                if tmpl_line.negate:
+                    value = -value
+                if fyear == 'current':
+                    current_value = value
+                elif fyear == 'previous':
+                    previous_value = value
+            # Write the values
+            self.write(cr, uid, line.id, {
+                'current_value': current_value,
+                'previous_value': previous_value,
+                'calc_date': line.report_id.calc_date,
+            }, context=context)
         return True
 
 
