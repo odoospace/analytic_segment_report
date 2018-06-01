@@ -127,7 +127,7 @@ class AccountBalanceReportingLine(orm.Model):
             previous_value = 0.0
             report = line.report_id
             segment_ids = []
-            for s in report.analytic_segment_ids
+            for s in report.analytic_segment_ids:
                 segment_ids.append(s.segment_id.id)
                 if s.with_children:
                     segment_ids += s.segment_id.segment_tmpl_id.get_childs_ids()
