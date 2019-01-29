@@ -120,6 +120,7 @@ class AccountBalanceReportingLine(orm.Model):
         """
         if context is None:
             context = {}
+        segment_obj = self.pool.get('analytic_segment.segment')
         for line in self.browse(cr, uid, ids, context=context):
             tmpl_line = line.template_line_id
             balance_mode = int(tmpl_line.template_id.balance_mode)
@@ -127,10 +128,13 @@ class AccountBalanceReportingLine(orm.Model):
             previous_value = 0.0
             report = line.report_id
             segment_ids = []
+            segment_tmpl_ids = []
             for s in report.analytic_segment_ids:
                 segment_ids.append(s.segment_id.id)
                 if s.with_children:
-                    segment_ids += s.segment_id.segment_tmpl_id.get_childs_ids()
+                    segment_tmpl_ids += s.segment_id.segment_tmpl_id.get_childs_ids()
+
+            segment_ids += segment_obj.search(cr, uid, [['segment_tmpl_id', 'in', segment_tmpl_ids]])
             print segment_ids
             # We use the same code to calculate both fiscal year values,
             # just iterating over them.
