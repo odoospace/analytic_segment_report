@@ -7,20 +7,10 @@ class AccountBlanaceReportingSegments(models.Model):
 
     def _domain_segment(self):
         if self.env.user.id == 1:
-            # no restrictions
             domain = []
+            return domain
         else:
-            segment_tmpl_ids = []
-            segment_ids = self.env.user.segment_ids
-            for s in segment_ids:
-                segment_tmpl_ids += [s.segment_id.segment_tmpl_id.id]
-                segment_tmpl_ids += s.segment_id.segment_tmpl_id.get_childs_ids()
-            virtual_segments = self.env['analytic_segment.template'].search([('virtual', '=', True)])
-            segment_tmpl_ids += [i.id for i in virtual_segments]
-
-            segment_ids = self.env['analytic_segment.segment'].search([('segment_tmpl_id', 'in', segment_tmpl_ids)])
-            domain = [('id', 'in', [i.id for i in segment_ids])]
-        return domain
+            return [('id', 'in', [i.id for i in self.env.user.segment_segment_ids])]
 
 
     report_id = fields.Many2one('account.balance.reporting')
