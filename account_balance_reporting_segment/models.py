@@ -8,9 +8,10 @@ class AccountBlanaceReportingSegments(models.Model):
     def _domain_segment(self):
         if self.env.user.id == 1:
             domain = []
-            return domain
         else:
-            return [('id', 'in', [i.id for i in self.env.user.segment_segment_ids])]
+            segment_by_company_open = json.loads(self.env.user.segment_by_company_open)[str(self.env.user.company_id.id)]
+            domain = [('id', 'in', segment_by_company_open)]
+        return domain
 
 
     report_id = fields.Many2one('account.balance.reporting')
