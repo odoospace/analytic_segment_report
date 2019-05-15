@@ -1,5 +1,6 @@
 from openerp import tools, models, fields, api
 from openerp.tools.translate import _
+import json
 
 #General Ledger - libro mayor
 class AccountReportGeneralLedgerWizard(models.TransientModel):

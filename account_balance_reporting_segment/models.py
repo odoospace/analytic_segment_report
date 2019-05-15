@@ -1,5 +1,7 @@
 from openerp import tools, models, fields, api
 from openerp.tools.translate import _
+import json
+
 
 class AccountBlanaceReportingSegments(models.Model):
 
