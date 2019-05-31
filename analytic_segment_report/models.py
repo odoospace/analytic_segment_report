@@ -46,7 +46,7 @@ class AccountReportTrialBalanceWizardSegments(models.TransientModel):
         else:
             segment_by_company_open = json.loads(self.env.user.segment_by_company_open)[str(self.env.user.company_id.id)]
             domain = [('id', 'in', segment_by_company_open)]
-    return domain
+        return domain
 
 
     report_id = fields.Many2one('trial.balance.webkit')
